@@ -84,7 +84,6 @@ export async function analyze(): Promise<void> {
 
     const output = JSON.parse(stdout);
     for (const key of Object.keys(output)) {
-      console.log(key, '=', output[key]);
       setOutput(key, output[key]);
     }
   } else if (RUN_TESTS) {
