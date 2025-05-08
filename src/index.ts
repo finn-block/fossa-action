@@ -59,14 +59,12 @@ export async function analyze(): Promise<void> {
   ].filter(arg => arg);
 
   // Setup listeners
-  let output;
-  const collectOutput = (data: Buffer) => {
-    output += data.toString();
-  };
+  let stderr;
+  let stdout;
 
   const listeners: ExecListeners = {
-    stdout: collectOutput,
-    stderr: collectOutput,
+    stdout: (data: Buffer) => { stdout += data.toString(); },
+    stderr: (data: Buffer) => { stderr += data.toString(); },
   };
 
   // Collect default options: Env and listeners
@@ -75,15 +73,22 @@ export async function analyze(): Promise<void> {
   const defaultOptions = { env: { ...process.env, PATH, FOSSA_API_KEY }, cwd: WORKING_DIRECTORY, listeners };
 
   if (!RUN_TESTS) {
-    output = '';
-    const exitCode = await exec('fossa', [...getArgs(['analyze']), CONTAINER], defaultOptions);
+    stderr = '';
+    stdout = '';
+    const exitCode = await exec('fossa', [...getArgs(['analyze', '--json']), CONTAINER], defaultOptions);
 
     // Check output or exitCode
-    if (exitCode !== 0 || output.match(failedRegex)) {
+    if (exitCode !== 0 || stderr.match(failedRegex)) {
       throw new Error(`FOSSA failed to scan`);
     }
+
+    const output = JSON.parse(stdout);
+    for (const key of Object.keys(output)) {
+      console.log(key, '=', output[key]);
+      setOutput(key, output[key]);
+    }
   } else if (RUN_TESTS) {
-    output = '';
+    stderr = '';
     const args = [...getArgs(['test']), CONTAINER];
 
     if (TEST_DIFF_REV && TEST_DIFF_REV !== '') {
@@ -93,7 +98,7 @@ export async function analyze(): Promise<void> {
     const exitCode = await exec('fossa', args, defaultOptions);
 
     // Check output or exitCode
-    if (exitCode !== 0 || output.match(failedRegex)) {
+    if (exitCode !== 0 || stderr.match(failedRegex)) {
       throw new Error(`Fossa tests failed`);
     }
   }
