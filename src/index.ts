@@ -75,7 +75,7 @@ export async function analyze(): Promise<void> {
   if (!RUN_TESTS) {
     stderr = '';
     stdout = '';
-    const exitCode = await exec('fossa', [...getArgs(['analyze', '--json']), CONTAINER], defaultOptions);
+    const exitCode = await exec('fossa', [...getArgs(['analyze']), '--json', CONTAINER], defaultOptions);
 
     // Check output or exitCode
     if (exitCode !== 0 || stderr.match(failedRegex)) {
